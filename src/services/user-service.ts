@@ -29,7 +29,7 @@ export async function login(username: string, password: string) {
     }
 
     const token = createUserToken(user);
-    return { success: true, token };
+    return { success: true, token, data: { username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -45,7 +45,7 @@ export async function createAccount(username: string, password: string) {
     const newUser = new User({ username, password });
     await newUser.save();
     const token = createUserToken(newUser);
-    return { success: true, token, message: "Account created successfully" };
+    return { success: true, token, data: { username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
