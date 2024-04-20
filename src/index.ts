@@ -1,6 +1,7 @@
 import express, { Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import cors from "cors";
 
 import authenticateToken from "./util/authenticateToken";
 import { CustomRequest } from "./types";
@@ -15,6 +16,8 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+app.use(cors());
 
 // Basic route for GET request
 app.get("/", (req: CustomRequest, res: Response) => {

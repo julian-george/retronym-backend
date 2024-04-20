@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
 
 import User, { IUser } from "../models/User";
@@ -16,6 +16,10 @@ function createUserToken(user: IUser) {
   });
 }
 
+type ReturnableUserData = {
+  username: string;
+};
+
 export async function login(username: string, password: string) {
   try {
     const user = await User.findOne({ username });
@@ -29,7 +33,7 @@ export async function login(username: string, password: string) {
     }
 
     const token = createUserToken(user);
-    return { success: true, token };
+    return { success: true, token, data: { username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -45,7 +49,29 @@ export async function createAccount(username: string, password: string) {
     const newUser = new User({ username, password });
     await newUser.save();
     const token = createUserToken(newUser);
-    return { success: true, token, message: "Account created successfully" };
+    return { success: true, token, data: { username } };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
+export async function getUserFromToken(token: string) {
+  if (!JWT_SECRET) throw new Error("JWT secret must be defined");
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
+    if (!decoded) {
+      return { success: false, message: "Invalid token" };
+    }
+
+    // // Fetch the user from the database
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    return { success: true, data: { username: user.username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
