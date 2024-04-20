@@ -1,5 +1,10 @@
 import express from "express";
-import { createAccount, login, setToken } from "../services/user-service";
+import {
+  createAccount,
+  getUserFromToken,
+  login,
+  setToken,
+} from "../services/user-service"; // Adjust path as necessary
 import { CustomRequest } from "../types";
 
 const router = express.Router();
@@ -53,6 +58,21 @@ router.post("/settoken", async (req: CustomRequest, res) => {
   console.log(`${site} token set to ${req.query.code}`);
 
   res.status(200).send();
+});
+
+router.post("/login-token", async (req: CustomRequest, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Token is required" });
+  }
+  const result = await getUserFromToken(token);
+  if (result.success) {
+    res.status(200).json(result);
+  } else {
+    res.status(401).json(result);
+  }
 });
 
 export default router;
