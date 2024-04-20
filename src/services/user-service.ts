@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { isNull } from "lodash";
 
 import User, { IUser } from "../models/User";
 
@@ -49,4 +50,31 @@ export async function createAccount(username: string, password: string) {
   } catch (error: any) {
     return { success: false, message: error.message };
   }
+}
+
+export async function getTokens(userId: string) {
+  const user = await User.findById(userId);
+  if (isNull(user)) {
+    return { success: false, message: "no user found with this id." };
+  }
+
+  return { twitter: user.twitterToken };
+}
+
+/**
+ * we have received an oauth token from twitter.
+ * save it to the user's document in the database.
+ * fetch and use this every time you search for posts etc
+ */
+export async function setTwitterToken(userId: string, token: string) {
+  const user = await User.findById(userId);
+  if (isNull(user)) {
+    return { success: false, message: "no user found with this id." };
+  }
+
+  // save token in user document
+  user.twitterToken = token;
+  await user.save();
+
+  return { success: true };
 }

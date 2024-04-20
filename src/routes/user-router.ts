@@ -1,5 +1,5 @@
 import express from "express";
-import { createAccount, login } from "../services/user-service"; // Adjust path as necessary
+import { createAccount, login } from "../services/user-service";
 import { CustomRequest } from "../types";
 
 const router = express.Router();
