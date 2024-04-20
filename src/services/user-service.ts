@@ -23,7 +23,7 @@ export async function login(username: string, password: string) {
       return { success: false, message: "User not found" };
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return { success: false, message: "Invalid credentials" };
     }
