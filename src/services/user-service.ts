@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { isNull } from "lodash";
 
 import User, { IUser } from "../models/User";
+import { Sites } from "../types";
 
 dotenv.config();
 
@@ -62,18 +63,28 @@ export async function getTokens(userId: string) {
 }
 
 /**
- * we have received an oauth token from twitter.
- * save it to the user's document in the database.
+ * save oauth token to the user's document in the database.
  * fetch and use this every time you search for posts etc
  */
-export async function setTwitterToken(userId: string, token: string) {
+export async function setToken(site: Sites, userId: string, token: string) {
   const user = await User.findById(userId);
   if (isNull(user)) {
     return { success: false, message: "no user found with this id." };
   }
 
+  // i tried this but it doesn't work:
+  // user[`${site.toLowerCase()}Token` as keyof IUser] = token;
+  // so i used a switch for time reasons
+  switch (site) {
+    case Sites.twitter:
+      user.twitterToken = token;
+    case Sites.reddit:
+      user.redditToken = token;
+    case Sites.youtube:
+      user.youtubeToken = token;
+  }
+
   // save token in user document
-  user.twitterToken = token;
   await user.save();
 
   return { success: true };

@@ -5,7 +5,6 @@ import mongoose from "mongoose";
 import authenticateToken from "./util/authenticateToken";
 import { CustomRequest } from "./types";
 import userRouter from "./routes/user-router";
-import oAuthRouter from "./routes/oauth-router";
 
 dotenv.config();
 
@@ -23,7 +22,6 @@ app.get("/", (req: CustomRequest, res: Response) => {
 });
 
 app.use("/users", userRouter);
-app.use("/oauth", oAuthRouter);
 
 // Catch 404 and forward to error handler
 app.use((req: CustomRequest, res: Response, next: NextFunction) => {
