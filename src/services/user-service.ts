@@ -120,6 +120,7 @@ export async function updatePreferences(
 }
 export async function setAccessCode(site: Sites, userId: string, code: string) {
   try {
+    const user = await User.findById(userId);
     if (isNull(user)) {
       return { success: false, message: "no user found with this id." };
     }
