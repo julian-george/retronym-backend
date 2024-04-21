@@ -1,13 +1,24 @@
 import express from "express";
 import {
   createAccount,
+  getTokens,
   getUserFromToken,
   login,
   setToken,
-} from "../services/user-service"; // Adjust path as necessary
+} from "../services/user-service";
 import { CustomRequest } from "../types";
 
 const router = express.Router();
+
+router.get("/oauthtokens", async (req: CustomRequest, res) => {
+  const result = await getTokens(req.userId ?? "");
+
+  if (result.success) {
+    res.status(201).json(result);
+  } else {
+    res.status(400).json(result);
+  }
+});
 
 router.post("/register", async (req: CustomRequest, res) => {
   const { username, password } = req.body;
@@ -40,9 +51,9 @@ router.post("/login", async (req: CustomRequest, res) => {
 });
 
 router.post("/settoken", async (req: CustomRequest, res) => {
-  const { site, state, code, error } = req.body;
+  const { state, code, error } = req.body;
 
-  const [secret, userId] = state.split("-");
+  const [site, userId, secret] = state.split("-");
 
   if (error) {
     console.error("failed to set oauth token", error);
