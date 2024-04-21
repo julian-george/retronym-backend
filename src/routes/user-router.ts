@@ -14,7 +14,7 @@ router.patch("/preferences", async (req: CustomRequest, res) => {
     return;
   }
   const userId = req.userId;
-  const { preferences } = req.body;
+  const preferences = req.body;
   const result = await updatePreferences(userId, preferences);
   if (result.success) {
     res.status(200).json(result);
