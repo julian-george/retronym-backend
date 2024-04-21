@@ -8,7 +8,23 @@ export interface IUser extends Document {
   twitterToken: string;
   redditToken: string;
   youtubeToken: string;
+  preferences: IPreferences;
 }
+
+interface IPreferences {
+  maxScrollingTime: number;
+  searchTerms: string[];
+}
+
+const defaultPreferences: IPreferences = {
+  maxScrollingTime: 30,
+  searchTerms: [],
+};
+
+const preferenceSchema = new mongoose.Schema<IPreferences>({
+  maxScrollingTime: Number,
+  searchTerms: [String],
+});
 
 // Schema definition for the User.
 const UserSchema = new mongoose.Schema<IUser>({
@@ -35,6 +51,11 @@ const UserSchema = new mongoose.Schema<IUser>({
   youtubeToken: {
     type: String,
     required: false,
+  },
+  preferences: {
+    type: preferenceSchema,
+    required: true,
+    default: defaultPreferences,
   },
 });
 
