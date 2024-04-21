@@ -14,8 +14,7 @@ router.get("/oauthcodes", async (req: CustomRequest, res) => {
 });
 
 router.post("/setcode", async (req: CustomRequest, res) => {
-  const { code, error, stateObject } = req.body;
-  const { site, userId, secret } = stateObject;
+  const { code, error, site, userId, secret } = req.body;
 
   if (error) {
     console.error("failed to set oauth code", error);
