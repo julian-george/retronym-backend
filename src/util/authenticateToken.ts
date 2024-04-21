@@ -21,11 +21,11 @@ function authenticateToken(
     return res.sendStatus(401); // If there is no token, unauthorized
   }
 
-  jwt.verify(token, JWT_SECRET, (err, userId) => {
-    if (err) {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err || typeof decoded == "string" || !decoded?.id) {
       return res.sendStatus(403); // If the token is not valid, forbidden
     }
-    userId = userId?.toString() || undefined;
+    const userId = decoded.id;
 
     if (userId) req.userId = userId;
     next(); // Move to the next middleware function or route handler
