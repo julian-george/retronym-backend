@@ -139,7 +139,7 @@ export async function obtainAccessTokens(userId: string) {
 
   if (!isUndefined(user.twitterCode) && isUndefined(user.twitterToken)) {
     // create params object
-    var params = new URLSearchParams();
+    const params = new URLSearchParams();
     params.append("client_id", process.env.TWITTER_CLIENT_ID ?? "");
 
     if (isUndefined(user.twitterRefreshToken)) {
@@ -214,7 +214,7 @@ export async function obtainAccessTokens(userId: string) {
 
   if (!isUndefined(user.youtubeCode) && isUndefined(user.youtubeToken)) {
     // create params object
-    var params = new URLSearchParams();
+    const params = new URLSearchParams();
     params.append("client_id", process.env.YOUTUBE_CLIENT_ID ?? "");
     params.append("client_secret", process.env.YOUTUBE_CLIENT_SECRET ?? "");
     params.append("grant_type", "authorization_code");
