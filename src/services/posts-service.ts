@@ -1,8 +1,8 @@
-import { getTokens } from "./user-service";
+import { getAccessCodes } from "./user-service";
 
 export async function getPosts(userId: string) {
   try {
-    const codes = await getTokens(userId);
+    const codes = await getAccessCodes(userId);
 
     // get posts from twitter using tokens
     const posts = {};
