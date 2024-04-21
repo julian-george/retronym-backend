@@ -1,11 +1,34 @@
 import express from "express";
-import { getTokens, setToken } from "../services/user-service";
+import {
+  getTokens,
+  setToken,
+  updatePreferences,
+} from "../services/user-service";
 import { CustomRequest } from "../types";
 
 const router = express.Router();
+
+router.patch("/preferences", async (req: CustomRequest, res) => {
+  if (!req.userId) {
+    res.status(403).end();
+    return;
+  }
+  const userId = req.userId;
+  const { preferences } = req.body;
+  const result = await updatePreferences(userId, preferences);
+  if (result.success) {
+    res.status(200).json(result);
+  } else {
+    res.status(400).json(result);
+  }
+});
+
 router.get("/oauthtokens", async (req: CustomRequest, res) => {
-  console.log(req.userId);
-  const result = await getTokens(req.userId ?? "");
+  if (!req.userId) {
+    res.status(403).end();
+    return;
+  }
+  const result = await getTokens(req.userId);
   if (result.success) {
     res.status(201).json(result);
   } else {

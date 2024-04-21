@@ -5,15 +5,22 @@ export interface IUser extends Document {
   username: string;
   password: string;
   comparePassword: (candidatePassword: string) => Promise<string>;
+  getPublicData: () => IPublicUser;
   twitterToken: string;
   redditToken: string;
   youtubeToken: string;
   preferences: IPreferences;
 }
 
-interface IPreferences {
+export interface IPreferences {
   maxScrollingTime: number;
   searchTerms: string[];
+}
+
+export interface IPublicUser {
+  _id: string;
+  username: string;
+  preferences: IPreferences;
 }
 
 const defaultPreferences: IPreferences = {
@@ -76,6 +83,14 @@ UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+UserSchema.methods.getPublicData = function (): IPublicUser {
+  return {
+    _id: this._id,
+    username: this.username,
+    preferences: this.preferences,
+  };
 };
 
 const User = mongoose.model<IUser>("User", UserSchema);

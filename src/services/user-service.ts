@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
 import { isNull } from "lodash";
 
-import User, { IUser } from "../models/User";
+import User, { IUser, IPreferences } from "../models/User";
 import { Sites } from "../types";
 
 dotenv.config();
@@ -17,10 +17,6 @@ function createUserToken(user: IUser) {
   });
 }
 
-type ReturnableUserData = {
-  username: string;
-};
-
 export async function login(username: string, password: string) {
   try {
     const user = await User.findOne({ username });
@@ -34,7 +30,7 @@ export async function login(username: string, password: string) {
     }
 
     const token = createUserToken(user);
-    return { success: true, token, data: { id: user._id, username } };
+    return { success: true, token, data: user.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -50,7 +46,7 @@ export async function createAccount(username: string, password: string) {
     const newUser = new User({ username, password });
     await newUser.save();
     const token = createUserToken(newUser);
-    return { success: true, token, data: { id: newUser._id, username } };
+    return { success: true, token, data: newUser.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -72,7 +68,7 @@ export async function getUserFromToken(token: string) {
       return { success: false, message: "User not found" };
     }
 
-    return { success: true, data: { id: user._id, username: user.username } };
+    return { success: true, data: user.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -103,25 +99,48 @@ export async function getTokens(userId: string) {
  * fetch and use this every time you search for posts etc
  */
 export async function setToken(site: Sites, userId: string, token: string) {
-  const user = await User.findById(userId);
-  if (isNull(user)) {
-    return { success: false, message: "no user found with this id." };
+  try {
+    const user = await User.findById(userId);
+    if (isNull(user)) {
+      return { success: false, message: "no user found with this id." };
+    }
+
+    // i tried this but it doesn't work:
+    // user[`${site.toLowerCase()}Token` as keyof IUser] = token;
+    // so i used a switch for time reasons
+    switch (site) {
+      case Sites.twitter:
+        user.twitterToken = token;
+      case Sites.reddit:
+        user.redditToken = token;
+      case Sites.youtube:
+        user.youtubeToken = token;
+    }
+
+    // save token in user document
+    await user.save();
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
+}
 
-  // i tried this but it doesn't work:
-  // user[`${site.toLowerCase()}Token` as keyof IUser] = token;
-  // so i used a switch for time reasons
-  switch (site) {
-    case Sites.twitter:
-      user.twitterToken = token;
-    case Sites.reddit:
-      user.redditToken = token;
-    case Sites.youtube:
-      user.youtubeToken = token;
+export async function updatePreferences(
+  userId: string,
+  newPreferences: Partial<IPreferences>
+) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, message: "no user found with this id." };
+    }
+    const { maxScrollingTime, searchTerms } = newPreferences;
+    if (maxScrollingTime) user.preferences.maxScrollingTime = maxScrollingTime;
+    if (searchTerms) user.preferences.searchTerms = searchTerms;
+    await user.save();
+    return { success: true, data: user.getPublicData() };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
-
-  // save token in user document
-  await user.save();
-
-  return { success: true };
 }
