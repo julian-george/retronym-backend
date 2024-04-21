@@ -145,6 +145,7 @@ export async function obtainAccessTokens(userId: string) {
     if (isUndefined(user.twitterRefreshToken)) {
       params.append("grant_type", "authorization_code");
       params.append("code_verifier", "challenge");
+      params.append("code", user.twitterCode);
       const { accessToken, refreshToken } = await axios.post<
         typeof params,
         { accessToken: string; refreshToken: string }
