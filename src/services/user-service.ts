@@ -1,9 +1,10 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
-import { isNull } from "lodash";
+import { isNull, isUndefined } from "lodash";
 
 import User, { IUser, IPreferences } from "../models/User";
 import { Sites } from "../types";
+import axios from "axios";
 
 dotenv.config();
 
@@ -74,7 +75,7 @@ export async function getUserFromToken(token: string) {
   }
 }
 
-export async function getTokens(userId: string) {
+export async function getAccessCodes(userId: string) {
   try {
     const user = await User.findById(userId);
     if (isNull(user)) {
@@ -84,9 +85,9 @@ export async function getTokens(userId: string) {
     return {
       success: true,
       data: {
-        twitter: !!user.twitterToken,
-        reddit: !!user.redditToken,
-        youtube: !!user.youtubeToken,
+        twitter: !!user.twitterCode,
+        reddit: !!user.redditCode,
+        youtube: !!user.youtubeCode,
       },
     };
   } catch (error: any) {
@@ -95,36 +96,9 @@ export async function getTokens(userId: string) {
 }
 
 /**
- * save oauth token to the user's document in the database.
+ * save oauth codes to the user's document in the database.
  * fetch and use this every time you search for posts etc
  */
-export async function setToken(site: Sites, userId: string, token: string) {
-  try {
-    const user = await User.findById(userId);
-    if (isNull(user)) {
-      return { success: false, message: "no user found with this id." };
-    }
-
-    // i tried this but it doesn't work:
-    // user[`${site.toLowerCase()}Token` as keyof IUser] = token;
-    // so i used a switch for time reasons
-    switch (site) {
-      case Sites.twitter:
-        user.twitterToken = token;
-      case Sites.reddit:
-        user.redditToken = token;
-      case Sites.youtube:
-        user.youtubeToken = token;
-    }
-
-    // save token in user document
-    await user.save();
-
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, message: error.message };
-  }
-}
 
 export async function updatePreferences(
   userId: string,
@@ -142,5 +116,144 @@ export async function updatePreferences(
     return { success: true, data: user.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
+  }
+}
+export async function setAccessCode(site: Sites, userId: string, code: string) {
+  const user = await User.findById(userId);
+  if (isNull(user)) {
+    return { success: false, message: "no user found with this id." };
+  }
+
+  // i tried this but it doesn't work:
+  // user[`${site.toLowerCase()}Code` as keyof IUser] = code;
+  // so i used a switch for time reasons
+  switch (site) {
+    case Sites.twitter:
+      user.twitterCode = code;
+    case Sites.reddit:
+      user.redditCode = code;
+    case Sites.youtube:
+      user.youtubeCode = code;
+  }
+
+  // save code in user document
+  await user.save();
+
+  await obtainAccessTokens(userId);
+
+  return { success: true };
+}
+
+/** use the access codes to obtain temporary access tokens */
+export async function obtainAccessTokens(userId: string) {
+  const user = await User.findById(userId);
+  if (isNull(user)) throw new Error("could not find user");
+
+  // for each token that is undefined but has a code,
+  // get a token from the service
+
+  if (!isUndefined(user.twitterCode) && isUndefined(user.twitterToken)) {
+    // create params object
+    const params = new URLSearchParams();
+    params.append("client_id", process.env.TWITTER_CLIENT_ID ?? "");
+
+    if (isUndefined(user.twitterRefreshToken)) {
+      params.append("grant_type", "authorization_code");
+      params.append("code_verifier", "challenge");
+      const { accessToken, refreshToken } = await axios.post<
+        typeof params,
+        { accessToken: string; refreshToken: string }
+      >("https://api.twitter.com/2/oauth2/token", params);
+
+      user.twitterToken = accessToken;
+      user.twitterRefreshToken = refreshToken;
+    } else {
+      params.append("grant_type", "refresh_token");
+      params.append("refresh_token", user.twitterRefreshToken);
+      const { accessToken } = await axios.post<
+        typeof params,
+        { accessToken: string }
+      >("https://api.twitter.com/2/oauth2/token", params);
+
+      user.twitterToken = accessToken;
+    }
+
+    await user.save();
+  }
+
+  if (!isUndefined(user.redditCode) && isUndefined(user.redditToken)) {
+    if (isUndefined(user.redditRefreshToken)) {
+      const { access_token } = await axios.post<
+        { grant_type: string; refresh_token: string },
+        { access_token: string }
+      >(
+        "https://www.reddit.com/api/v1/access_token",
+        {
+          grant_type: "authorization_code",
+          refresh_token: user.redditRefreshToken,
+        },
+        {
+          auth: {
+            username: process.env.REDDIT_CLIENT_ID ?? "",
+            password: process.env.REDDIT_CLIENT_SECRET ?? "",
+          },
+        }
+      );
+
+      user.redditToken = access_token;
+    } else {
+      const { access_token, refresh_token } = await axios.post<
+        { grant_type: string; code: string; redirect_uri: string },
+        { access_token: string; refresh_token: string }
+      >(
+        "https://www.reddit.com/api/v1/access_token",
+        {
+          grant_type: "authorization_code",
+          code: user.redditCode,
+          redirect_uri: process.env.APP_REDIRECT,
+        },
+        {
+          auth: {
+            username: process.env.REDDIT_CLIENT_ID ?? "",
+            password: process.env.REDDIT_CLIENT_SECRET ?? "",
+          },
+        }
+      );
+
+      user.redditToken = access_token;
+      user.redditRefreshToken = refresh_token;
+    }
+
+    await user.save();
+  }
+
+  if (!isUndefined(user.youtubeCode) && isUndefined(user.youtubeToken)) {
+    // create params object
+    const params = new URLSearchParams();
+    params.append("client_id", process.env.YOUTUBE_CLIENT_ID ?? "");
+    params.append("client_secret", process.env.YOUTUBE_CLIENT_SECRET ?? "");
+    params.append("grant_type", "authorization_code");
+    if (isUndefined(user.youtubeRefreshToken)) {
+      params.append("code", user.youtubeCode);
+      params.append("redirect_uri ", process.env.APP_REDIRECT ?? "");
+
+      const { access_token, refresh_token } = await axios.post<
+        typeof params,
+        { access_token: string; refresh_token: string }
+      >("https://oauth2.googleapis.com/token", params);
+
+      user.youtubeToken = access_token;
+      user.youtubeRefreshToken = refresh_token;
+    } else {
+      params.append("refresh_token", user.youtubeRefreshToken);
+      const { access_token } = await axios.post<
+        typeof params,
+        { access_token: string }
+      >("https://oauth2.googleapis.com/token", params);
+
+      user.youtubeToken = access_token;
+    }
+
+    await user.save();
   }
 }

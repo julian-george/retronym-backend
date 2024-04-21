@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  getTokens,
-  setToken,
+  getAccessCodes,
+  setAccessCode,
   updatePreferences,
 } from "../services/user-service";
 import { CustomRequest } from "../types";
@@ -23,12 +23,9 @@ router.patch("/preferences", async (req: CustomRequest, res) => {
   }
 });
 
-router.get("/oauthtokens", async (req: CustomRequest, res) => {
-  if (!req.userId) {
-    res.status(403).end();
-    return;
-  }
-  const result = await getTokens(req.userId);
+router.get("/oauthcodes", async (req: CustomRequest, res) => {
+  console.log(req.userId);
+  const result = await getAccessCodes(req.userId ?? "");
   if (result.success) {
     res.status(201).json(result);
   } else {
@@ -36,11 +33,12 @@ router.get("/oauthtokens", async (req: CustomRequest, res) => {
   }
 });
 
-router.post("/settoken", async (req: CustomRequest, res) => {
+router.post("/setcode", async (req: CustomRequest, res) => {
   const { code, error, stateObject } = req.body;
-  const [redirect, site, userId, secret] = stateObject;
+  const { site, userId, secret } = stateObject;
+
   if (error) {
-    console.error("failed to set oauth token", error);
+    console.error("failed to set oauth code", error);
     res.status(500).send({ success: false, message: error });
   }
 
@@ -48,10 +46,10 @@ router.post("/settoken", async (req: CustomRequest, res) => {
     console.error(`${site} secret in state is not correct`);
     res.status(500).send({ success: false, message: "state does not match" });
   }
-  await setToken(site, userId, code); // convert to string
-  console.log(`${site} token set to ${req.query.code}`);
+  await setAccessCode(site, userId, code); // convert to string
+  console.log(`${site} access code set to ${req.query.code}`);
 
-  res.status(200).send({ sucess: true, redirect: redirect });
+  res.status(200).send({ sucess: true });
 });
 
 export default router;

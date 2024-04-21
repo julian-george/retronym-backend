@@ -2,9 +2,9 @@ import { getTokens } from "./user-service";
 
 export async function getPosts(userId: string) {
   try {
-    const tokens = await getTokens(userId);
+    const codes = await getTokens(userId);
 
-    // get posts from twitter using twitter token
+    // get posts from twitter using tokens
     const posts = {};
 
     return { success: true, posts };
