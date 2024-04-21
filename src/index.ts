@@ -7,6 +7,7 @@ import authenticateToken from "./util/authenticateToken";
 import { CustomRequest } from "./types";
 import authRouter from "./routes/auth-router";
 import userRouter from "./routes/user-router";
+import postsRouter from "./routes/posts-router";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/auth", authRouter);
 app.use(authenticateToken);
 
 app.use("/users", userRouter);
+app.use("/posts", postsRouter);
 
 // Catch 404 and forward to error handler
 app.use((req: CustomRequest, res: Response, next: NextFunction) => {
