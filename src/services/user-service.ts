@@ -95,6 +95,26 @@ export async function getAccessCodes(userId: string) {
   }
 }
 
+export async function getAccessTokens(userId: string) {
+  try {
+    const user = await User.findById(userId);
+    if (isNull(user)) {
+      return { success: false, message: "no user found with this id." };
+    }
+
+    return {
+      success: true,
+      data: {
+        twitter: user.twitterToken,
+        reddit: user.redditToken,
+        youtube: user.youtubeToken,
+      },
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
+
 /**
  * save oauth codes to the user's document in the database.
  * fetch and use this every time you search for posts etc

@@ -9,6 +9,7 @@ export interface IUser extends Document {
   twitterCode: string;
   twitterToken: string;
   twitterRefreshToken: string;
+  twitterId: string;
   redditCode: string;
   redditToken: string;
   redditRefreshToken: string;
@@ -62,6 +63,10 @@ const UserSchema = new mongoose.Schema<IUser>({
     required: false,
   },
   twitterRefreshToken: {
+    type: String,
+    required: false,
+  },
+  twitterId: {
     type: String,
     required: false,
   },
