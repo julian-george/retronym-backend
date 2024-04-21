@@ -138,55 +138,108 @@ export async function obtainAccessTokens(userId: string) {
   // get a token from the service
 
   if (!isUndefined(user.twitterCode) && isUndefined(user.twitterToken)) {
-    const { accessToken, refreshToken } = await axios.post<
-      typeof params,
-      { accessToken: string; refreshToken: string }
-    >("https://oauth2.googleapis.com/token", params);
+    // create params object
+    var params = new URLSearchParams();
+    params.append("client_id", process.env.TWITTER_CLIENT_ID ?? "");
 
-    user.twitterToken = accessToken;
-    user.twitterRefreshToken = refreshToken;
-    user.save();
+    if (isUndefined(user.twitterRefreshToken)) {
+      params.append("grant_type", "authorization_code");
+      params.append("code_verifier", "challenge");
+      const { accessToken, refreshToken } = await axios.post<
+        typeof params,
+        { accessToken: string; refreshToken: string }
+      >("https://api.twitter.com/2/oauth2/token", params);
+
+      user.twitterToken = accessToken;
+      user.twitterRefreshToken = refreshToken;
+    } else {
+      params.append("grant_type", "refresh_token");
+      params.append("refresh_token", user.twitterRefreshToken);
+      const { accessToken } = await axios.post<
+        typeof params,
+        { accessToken: string }
+      >("https://api.twitter.com/2/oauth2/token", params);
+
+      user.twitterToken = accessToken;
+    }
+
+    await user.save();
   }
 
   if (!isUndefined(user.redditCode) && isUndefined(user.redditToken)) {
-    const { accessToken, refreshToken } = await axios.post<
-      typeof params,
-      { accessToken: string; refreshToken: string }
-    >("https://oauth2.googleapis.com/token", params);
+    if (isUndefined(user.redditRefreshToken)) {
+      const { access_token } = await axios.post<
+        { grant_type: string; refresh_token: string },
+        { access_token: string }
+      >(
+        "https://www.reddit.com/api/v1/access_token",
+        {
+          grant_type: "authorization_code",
+          refresh_token: user.redditRefreshToken,
+        },
+        {
+          auth: {
+            username: process.env.REDDIT_CLIENT_ID ?? "",
+            password: process.env.REDDIT_CLIENT_SECRET ?? "",
+          },
+        }
+      );
 
-    user.redditToken = accessToken;
-    user.redditRefreshToken = refreshToken;
-    user.save();
+      user.redditToken = access_token;
+    } else {
+      const { access_token, refresh_token } = await axios.post<
+        { grant_type: string; code: string; redirect_uri: string },
+        { access_token: string; refresh_token: string }
+      >(
+        "https://www.reddit.com/api/v1/access_token",
+        {
+          grant_type: "authorization_code",
+          code: user.redditCode,
+          redirect_uri: process.env.APP_REDIRECT,
+        },
+        {
+          auth: {
+            username: process.env.REDDIT_CLIENT_ID ?? "",
+            password: process.env.REDDIT_CLIENT_SECRET ?? "",
+          },
+        }
+      );
+
+      user.redditToken = access_token;
+      user.redditRefreshToken = refresh_token;
+    }
+
+    await user.save();
   }
 
   if (!isUndefined(user.youtubeCode) && isUndefined(user.youtubeToken)) {
     // create params object
     var params = new URLSearchParams();
     params.append("client_id", process.env.YOUTUBE_CLIENT_ID ?? "");
-    params.append("client_secret ", process.env.YOUTUBE_CLIENT_SECRET ?? "");
-    params.append("grant_type ", "authorization_code");
+    params.append("client_secret", process.env.YOUTUBE_CLIENT_SECRET ?? "");
+    params.append("grant_type", "authorization_code");
     if (isUndefined(user.youtubeRefreshToken)) {
       params.append("code", user.youtubeCode);
       params.append("redirect_uri ", process.env.APP_REDIRECT ?? "");
 
-      const { accessToken, refreshToken } = await axios.post<
+      const { access_token, refresh_token } = await axios.post<
         typeof params,
-        { accessToken: string; refreshToken: string }
+        { access_token: string; refresh_token: string }
       >("https://oauth2.googleapis.com/token", params);
 
-      user.youtubeToken = accessToken;
-      user.youtubeRefreshToken = refreshToken;
+      user.youtubeToken = access_token;
+      user.youtubeRefreshToken = refresh_token;
     } else {
       params.append("refresh_token", user.youtubeRefreshToken);
-      const { accessToken } = await axios.post<
+      const { access_token } = await axios.post<
         typeof params,
-        { accessToken: string }
+        { access_token: string }
       >("https://oauth2.googleapis.com/token", params);
 
-      user.youtubeToken = accessToken;
+      user.youtubeToken = access_token;
     }
 
-    user.save();
+    await user.save();
   }
 }
 
