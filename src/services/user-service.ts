@@ -115,10 +115,13 @@ export async function setAccessCode(site: Sites, userId: string, code: string) {
   switch (site) {
     case Sites.twitter:
       user.twitterCode = code;
+      break;
     case Sites.reddit:
       user.redditCode = code;
+      break;
     case Sites.youtube:
       user.youtubeCode = code;
+      break;
   }
 
   // save code in user document
