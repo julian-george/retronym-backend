@@ -78,7 +78,7 @@ export async function getUserFromToken(token: string) {
   }
 }
 
-export async function getTokens(userId: string) {
+export async function getAccessCodes(userId: string) {
   try {
     const user = await User.findById(userId);
     if (isNull(user)) {
@@ -88,9 +88,9 @@ export async function getTokens(userId: string) {
     return {
       success: true,
       data: {
-        twitter: !!user.twitterToken,
-        reddit: !!user.redditToken,
-        youtube: !!user.youtubeToken,
+        twitter: !!user.twitterCode,
+        reddit: !!user.redditCode,
+        youtube: !!user.youtubeCode,
       },
     };
   } catch (error: any) {
@@ -99,28 +99,28 @@ export async function getTokens(userId: string) {
 }
 
 /**
- * save oauth token to the user's document in the database.
+ * save oauth codes to the user's document in the database.
  * fetch and use this every time you search for posts etc
  */
-export async function setToken(site: Sites, userId: string, token: string) {
+export async function setAccessCode(site: Sites, userId: string, code: string) {
   const user = await User.findById(userId);
   if (isNull(user)) {
     return { success: false, message: "no user found with this id." };
   }
 
   // i tried this but it doesn't work:
-  // user[`${site.toLowerCase()}Token` as keyof IUser] = token;
+  // user[`${site.toLowerCase()}Code` as keyof IUser] = code;
   // so i used a switch for time reasons
   switch (site) {
     case Sites.twitter:
-      user.twitterToken = token;
+      user.twitterCode = code;
     case Sites.reddit:
-      user.redditToken = token;
+      user.redditCode = code;
     case Sites.youtube:
-      user.youtubeToken = token;
+      user.youtubeCode = code;
   }
 
-  // save token in user document
+  // save code in user document
   await user.save();
 
   return { success: true };

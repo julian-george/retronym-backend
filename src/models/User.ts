@@ -5,9 +5,9 @@ export interface IUser extends Document {
   username: string;
   password: string;
   comparePassword: (candidatePassword: string) => Promise<string>;
-  twitterToken: string;
-  redditToken: string;
-  youtubeToken: string;
+  twitterCode: string;
+  redditCode: string;
+  youtubeCode: string;
 }
 
 // Schema definition for the User.
@@ -24,15 +24,15 @@ const UserSchema = new mongoose.Schema<IUser>({
     required: true,
     minlength: 5,
   },
-  twitterToken: {
+  twitterCode: {
     type: String,
     required: false,
   },
-  redditToken: {
+  redditCode: {
     type: String,
     required: false,
   },
-  youtubeToken: {
+  youtubeCode: {
     type: String,
     required: false,
   },
