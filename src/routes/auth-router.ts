@@ -8,7 +8,7 @@ import { CustomRequest } from "../types";
 
 const router = express.Router();
 
-router.post("/register", async (req: CustomRequest, res) => {
+router.post("/register", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res
@@ -23,7 +23,7 @@ router.post("/register", async (req: CustomRequest, res) => {
   }
 });
 
-router.post("/login", async (req: CustomRequest, res) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res
@@ -38,7 +38,7 @@ router.post("/login", async (req: CustomRequest, res) => {
   }
 });
 
-router.post("/login-token", async (req: CustomRequest, res) => {
+router.post("/login-token", async (req, res) => {
   const { token } = req.body;
   if (!token) {
     return res

@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
 import { isNull, isUndefined } from "lodash";
 
-import User, { IUser } from "../models/User";
+import User, { IUser, IPreferences } from "../models/User";
 import { Sites } from "../types";
 import axios from "axios";
 
@@ -18,10 +18,6 @@ function createUserToken(user: IUser) {
   });
 }
 
-type ReturnableUserData = {
-  username: string;
-};
-
 export async function login(username: string, password: string) {
   try {
     const user = await User.findOne({ username });
@@ -35,7 +31,7 @@ export async function login(username: string, password: string) {
     }
 
     const token = createUserToken(user);
-    return { success: true, token, data: { id: user._id, username } };
+    return { success: true, token, data: user.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -51,7 +47,7 @@ export async function createAccount(username: string, password: string) {
     const newUser = new User({ username, password });
     await newUser.save();
     const token = createUserToken(newUser);
-    return { success: true, token, data: { id: newUser._id, username } };
+    return { success: true, token, data: newUser.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -73,7 +69,7 @@ export async function getUserFromToken(token: string) {
       return { success: false, message: "User not found" };
     }
 
-    return { success: true, data: { id: user._id, username: user.username } };
+    return { success: true, data: user.getPublicData() };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -103,6 +99,25 @@ export async function getAccessCodes(userId: string) {
  * save oauth codes to the user's document in the database.
  * fetch and use this every time you search for posts etc
  */
+
+export async function updatePreferences(
+  userId: string,
+  newPreferences: Partial<IPreferences>
+) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, message: "no user found with this id." };
+    }
+    const { maxScrollingTime, searchTerms } = newPreferences;
+    if (maxScrollingTime) user.preferences.maxScrollingTime = maxScrollingTime;
+    if (searchTerms) user.preferences.searchTerms = searchTerms;
+    await user.save();
+    return { success: true, data: user.getPublicData() };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
 export async function setAccessCode(site: Sites, userId: string, code: string) {
   const user = await User.findById(userId);
   if (isNull(user)) {
@@ -243,6 +258,3 @@ export async function obtainAccessTokens(userId: string) {
     await user.save();
   }
 }
-
-/** get access tokens saved in database */
-export async function getAccessTokens(userId: string) {}
