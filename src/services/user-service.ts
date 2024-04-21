@@ -1,9 +1,10 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
-import { isNull } from "lodash";
+import { isNull, isUndefined } from "lodash";
 
 import User, { IUser } from "../models/User";
 import { Sites } from "../types";
+import axios from "axios";
 
 dotenv.config();
 
@@ -123,5 +124,71 @@ export async function setAccessCode(site: Sites, userId: string, code: string) {
   // save code in user document
   await user.save();
 
+  await obtainAccessTokens(userId);
+
   return { success: true };
 }
+
+/** use the access codes to obtain temporary access tokens */
+export async function obtainAccessTokens(userId: string) {
+  const user = await User.findById(userId);
+  if (isNull(user)) throw new Error("could not find user");
+
+  // for each token that is undefined but has a code,
+  // get a token from the service
+
+  if (!isUndefined(user.twitterCode) && isUndefined(user.twitterToken)) {
+    const { accessToken, refreshToken } = await axios.post<
+      typeof params,
+      { accessToken: string; refreshToken: string }
+    >("https://oauth2.googleapis.com/token", params);
+
+    user.twitterToken = accessToken;
+    user.twitterRefreshToken = refreshToken;
+    user.save();
+  }
+
+  if (!isUndefined(user.redditCode) && isUndefined(user.redditToken)) {
+    const { accessToken, refreshToken } = await axios.post<
+      typeof params,
+      { accessToken: string; refreshToken: string }
+    >("https://oauth2.googleapis.com/token", params);
+
+    user.redditToken = accessToken;
+    user.redditRefreshToken = refreshToken;
+    user.save();
+  }
+
+  if (!isUndefined(user.youtubeCode) && isUndefined(user.youtubeToken)) {
+    // create params object
+    var params = new URLSearchParams();
+    params.append("client_id", process.env.YOUTUBE_CLIENT_ID ?? "");
+    params.append("client_secret ", process.env.YOUTUBE_CLIENT_SECRET ?? "");
+    params.append("grant_type ", "authorization_code");
+    if (isUndefined(user.youtubeRefreshToken)) {
+      params.append("code", user.youtubeCode);
+      params.append("redirect_uri ", process.env.APP_REDIRECT ?? "");
+
+      const { accessToken, refreshToken } = await axios.post<
+        typeof params,
+        { accessToken: string; refreshToken: string }
+      >("https://oauth2.googleapis.com/token", params);
+
+      user.youtubeToken = accessToken;
+      user.youtubeRefreshToken = refreshToken;
+    } else {
+      params.append("refresh_token", user.youtubeRefreshToken);
+      const { accessToken } = await axios.post<
+        typeof params,
+        { accessToken: string }
+      >("https://oauth2.googleapis.com/token", params);
+
+      user.youtubeToken = accessToken;
+    }
+
+    user.save();
+  }
+}
+
+/** get access tokens saved in database */
+export async function getAccessTokens(userId: string) {}
