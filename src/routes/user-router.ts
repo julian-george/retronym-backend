@@ -24,7 +24,6 @@ router.patch("/preferences", async (req: CustomRequest, res) => {
 });
 
 router.get("/oauthcodes", async (req: CustomRequest, res) => {
-  console.log(req.userId);
   const result = await getAccessCodes(req.userId ?? "");
   if (result.success) {
     res.status(201).json(result);
@@ -34,7 +33,12 @@ router.get("/oauthcodes", async (req: CustomRequest, res) => {
 });
 
 router.post("/setcode", async (req: CustomRequest, res) => {
-  const { code, error, site, userId, secret } = req.body;
+  if (!req.userId) {
+    res.status(403).end();
+    return;
+  }
+  const { code, error, site, secret } = req.body;
+  const userId = req.userId;
 
   if (error) {
     console.error("failed to set oauth code", error);
@@ -46,9 +50,7 @@ router.post("/setcode", async (req: CustomRequest, res) => {
     res.status(500).send({ success: false, message: "state does not match" });
   }
   await setAccessCode(site, userId, code); // convert to string
-  console.log(`${site} access code set to ${req.query.code}`);
-
-  res.status(200).send({ sucess: true });
+  res.status(200).send({ success: true });
 });
 
 export default router;

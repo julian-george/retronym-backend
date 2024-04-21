@@ -119,29 +119,35 @@ export async function updatePreferences(
   }
 }
 export async function setAccessCode(site: Sites, userId: string, code: string) {
-  const user = await User.findById(userId);
-  if (isNull(user)) {
-    return { success: false, message: "no user found with this id." };
+  try {
+    if (isNull(user)) {
+      return { success: false, message: "no user found with this id." };
+    }
+
+    // i tried this but it doesn't work:
+    // user[`${site.toLowerCase()}Code` as keyof IUser] = code;
+    // so i used a switch for time reasons
+    switch (site) {
+      case Sites.twitter:
+        user.twitterCode = code;
+        break;
+      case Sites.reddit:
+        user.redditCode = code;
+        break;
+      case Sites.youtube:
+        user.youtubeCode = code;
+        break;
+    }
+
+    // save code in user document
+    await user.save();
+
+    await obtainAccessTokens(userId);
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
   }
-
-  // i tried this but it doesn't work:
-  // user[`${site.toLowerCase()}Code` as keyof IUser] = code;
-  // so i used a switch for time reasons
-  switch (site) {
-    case Sites.twitter:
-      user.twitterCode = code;
-    case Sites.reddit:
-      user.redditCode = code;
-    case Sites.youtube:
-      user.youtubeCode = code;
-  }
-
-  // save code in user document
-  await user.save();
-
-  await obtainAccessTokens(userId);
-
-  return { success: true };
 }
 
 /** use the access codes to obtain temporary access tokens */
