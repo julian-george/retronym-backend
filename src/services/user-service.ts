@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
 import { isNull } from "lodash";
@@ -35,7 +34,7 @@ export async function login(username: string, password: string) {
     }
 
     const token = createUserToken(user);
-    return { success: true, token, data: { username } };
+    return { success: true, token, data: { id: user._id, username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -51,7 +50,7 @@ export async function createAccount(username: string, password: string) {
     const newUser = new User({ username, password });
     await newUser.save();
     const token = createUserToken(newUser);
-    return { success: true, token, data: { username } };
+    return { success: true, token, data: { id: newUser._id, username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -73,7 +72,7 @@ export async function getUserFromToken(token: string) {
       return { success: false, message: "User not found" };
     }
 
-    return { success: true, data: { username: user.username } };
+    return { success: true, data: { id: user._id, username: user.username } };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -85,7 +84,14 @@ export async function getTokens(userId: string) {
     return { success: false, message: "no user found with this id." };
   }
 
-  return { twitter: user.twitterToken };
+  return {
+    success: true,
+    data: {
+      twitter: !!user.twitterToken,
+      reddit: !!user.redditToken,
+      youtube: !!user.youtubeToken,
+    },
+  };
 }
 
 /**
