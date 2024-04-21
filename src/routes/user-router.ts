@@ -1,8 +1,28 @@
 import express from "express";
-import { getAccessCodes, setAccessCode } from "../services/user-service";
+import {
+  getAccessCodes,
+  setAccessCode,
+  updatePreferences,
+} from "../services/user-service";
 import { CustomRequest } from "../types";
 
 const router = express.Router();
+
+router.patch("/preferences", async (req: CustomRequest, res) => {
+  if (!req.userId) {
+    res.status(403).end();
+    return;
+  }
+  const userId = req.userId;
+  const preferences = req.body;
+  const result = await updatePreferences(userId, preferences);
+  if (result.success) {
+    res.status(200).json(result);
+  } else {
+    res.status(400).json(result);
+  }
+});
+
 router.get("/oauthcodes", async (req: CustomRequest, res) => {
   console.log(req.userId);
   const result = await getAccessCodes(req.userId ?? "");

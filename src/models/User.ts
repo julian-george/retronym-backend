@@ -5,6 +5,7 @@ export interface IUser extends Document {
   username: string;
   password: string;
   comparePassword: (candidatePassword: string) => Promise<string>;
+  getPublicData: () => IPublicUser;
   twitterCode: string;
   twitterToken: string;
   twitterRefreshToken: string;
@@ -13,8 +14,30 @@ export interface IUser extends Document {
   redditRefreshToken: string;
   youtubeCode: string;
   youtubeToken: string;
+  preferences: IPreferences;
   youtubeRefreshToken: string;
 }
+
+export interface IPreferences {
+  maxScrollingTime: number;
+  searchTerms: string[];
+}
+
+export interface IPublicUser {
+  _id: string;
+  username: string;
+  preferences: IPreferences;
+}
+
+const defaultPreferences: IPreferences = {
+  maxScrollingTime: 30,
+  searchTerms: [],
+};
+
+const preferenceSchema = new mongoose.Schema<IPreferences>({
+  maxScrollingTime: Number,
+  searchTerms: [String],
+});
 
 // Schema definition for the User.
 const UserSchema = new mongoose.Schema<IUser>({
@@ -62,6 +85,11 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: String,
     required: false,
   },
+  preferences: {
+    type: preferenceSchema,
+    required: true,
+    default: defaultPreferences,
+  },
   youtubeRefreshToken: {
     type: String,
     required: false,
@@ -85,6 +113,14 @@ UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+UserSchema.methods.getPublicData = function (): IPublicUser {
+  return {
+    _id: this._id,
+    username: this.username,
+    preferences: this.preferences,
+  };
 };
 
 const User = mongoose.model<IUser>("User", UserSchema);
