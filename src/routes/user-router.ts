@@ -51,9 +51,9 @@ router.post("/login", async (req: CustomRequest, res) => {
 });
 
 router.post("/settoken", async (req: CustomRequest, res) => {
-  const { state, code, error } = req.body;
+  const { code, error, stateObject } = req.body;
 
-  const [redirect, site, userId, secret] = state.split("-");
+  const [redirect, site, userId, secret] = stateObject;
 
   if (error) {
     console.error("failed to set oauth token", error);
