@@ -5,6 +5,7 @@ import cors from "cors";
 
 import authenticateToken from "./util/authenticateToken";
 import { CustomRequest } from "./types";
+import authRouter from "./routes/auth-router";
 import userRouter from "./routes/user-router";
 
 dotenv.config();
@@ -23,6 +24,10 @@ app.use(cors());
 app.get("/", (req: CustomRequest, res: Response) => {
   res.send("Hello World from TypeScript!");
 });
+
+app.use("/auth", authRouter);
+
+app.use(authenticateToken);
 
 app.use("/users", userRouter);
 

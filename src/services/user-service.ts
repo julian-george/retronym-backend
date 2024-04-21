@@ -79,19 +79,23 @@ export async function getUserFromToken(token: string) {
 }
 
 export async function getTokens(userId: string) {
-  const user = await User.findById(userId);
-  if (isNull(user)) {
-    return { success: false, message: "no user found with this id." };
-  }
+  try {
+    const user = await User.findById(userId);
+    if (isNull(user)) {
+      return { success: false, message: "no user found with this id." };
+    }
 
-  return {
-    success: true,
-    data: {
-      twitter: !!user.twitterToken,
-      reddit: !!user.redditToken,
-      youtube: !!user.youtubeToken,
-    },
-  };
+    return {
+      success: true,
+      data: {
+        twitter: !!user.twitterToken,
+        reddit: !!user.redditToken,
+        youtube: !!user.youtubeToken,
+      },
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
 }
 
 /**
