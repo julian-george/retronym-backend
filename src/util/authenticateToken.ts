@@ -16,7 +16,7 @@ function authenticateToken(
   // Get the token from the request header
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Extracting from format: "Bearer <TOKEN>"
-
+  console.log(token);
   if (token == null) {
     return res.sendStatus(401); // If there is no token, unauthorized
   }

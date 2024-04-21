@@ -11,6 +11,7 @@ router.get("/", async (req: CustomRequest, res) => {
       res.status(400).json({ success: false, message: "user id missing" });
       return;
     }
+    console.log(req.userId);
 
     const result = await getPosts(req.userId);
 
